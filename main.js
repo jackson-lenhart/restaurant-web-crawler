@@ -2,8 +2,9 @@
 
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
-
-let url = "http://pizzapeddleranddeli.com";
+const MongoClient = require("mongodb").MongoClient;
+const mongoUrl = require("./mongo-url");
+const urls = require("./urls");
 
 async function buildAdj(Adj, root, directory = "/") {
   if (Adj[directory]) {
@@ -12,22 +13,22 @@ async function buildAdj(Adj, root, directory = "/") {
   let res = await fetch(root + directory);
   let content = await res.text();
   let domTree = cheerio.load(content);
-  let localHrefs = {};
+  let vertices = {};
   let re = /^\//;
   let as = domTree("a");
   for (let i = 0; i < as.length; i++) {
     let href = as[i].attribs.href;
-    if (re.test(href) && !localHrefs.hasOwnProperty(href)) {
-      localHrefs[href] = true;
+    if (re.test(href) && !vertices[href]) {
+      vertices[href] = true;
     }
   }
-  Adj[directory] = localHrefs;
-  for (let k in localHrefs) {
+  Adj[directory] = vertices;
+  for (let k in vertices) {
     await buildAdj(Adj, root, k);
   }
 }
 
-async function visit(Adj, directory, memo) {
+async function visit(Adj, url, memo, directory = "/") {
   let cd = Adj[directory];
   for (let k in cd) {
     if (!memo[k]) {
@@ -37,22 +38,36 @@ async function visit(Adj, directory, memo) {
       let title = domTree("title");
       console.log("Title:", title.text());
       memo[k] = true;
-      await visit(Adj, k, memo);
+      await visit(Adj, url, memo, k);
     }
   }
 }
 
-async function depthFirstSearch(Adj) {
+async function depthFirstSearch(Adj, url) {
   let memo = {};
-  await visit(Adj, "/", memo);
+  await visit(Adj, url, memo);
 }
 
-async function start() {
-  let Adj = {};
-  await buildAdj(Adj, url);
-  console.log("ADJ:", Adj);
+async function main() {
+  let client = await MongoClient.connect(mongoUrl);
+  let db = client.db("firstCluster");
+  let AdjTable = db.collection("adjacencyLists");
 
-  await depthFirstSearch(Adj);
+  for (let x of urls) {
+    let entry = await AdjTable.findOne({ url: x });
+    let Adj = {};
+    if (!entry) {
+      await buildAdj(Adj, x);
+      AdjTable.insertOne({
+        url: x,
+        Adj
+      });
+    } else {
+      Adj = entry.Adj;
+    }
+    await depthFirstSearch(Adj, x);
+  }
+  client.close();
 }
 
-start();
+main();

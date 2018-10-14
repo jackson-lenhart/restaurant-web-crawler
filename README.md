@@ -1,4 +1,4 @@
-# Depth First Search
+# Restaurant Web Crawler
 
 * Node.js 8.4.0
 * cheerio 1.0.0

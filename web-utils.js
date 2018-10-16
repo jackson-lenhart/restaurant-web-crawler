@@ -22,41 +22,38 @@ function harvestHrefs(as, root) {
       continue;
     }
 
-    if (isAbsolute(href)) {
-      if (href.includes(root)) {
-        href = href.replace(root, '');
-        if (!href) {
-          href = '/';
-        }
-      } else {
-        continue;
-      }
+    // remove fragments and ignore if we end up with empty string
+    href = defragmentify(href);
+    if (href === '') {
+      continue;
+    }
 
-    // otherwise, its relative
-    } else {
+    if (isRelative(href)) {
       if (href.indexOf('/') !== 0) {
-        href = '/' + href;
+        href = root + '/' + href;
+      } else {
+        href = root + href;
       }
     }
 
-    // remove trailing slash
-    if (href !== '/' && href[href.length - 1] === '/') {
+    // remove trailing slash if there is one
+    if (href[href.length - 1] === '/') {
       href = href.slice(0, -1);
     }
 
+    // hrefs we aint tryna mess with
     if (
-      isFragment(href)
-      || href.includes('tel:')
+      href.includes('tel:')
       || href.includes('mailto:')
       || href.includes('sms:')
+      || /javascript: ?void/.test(href)
+      || fileExtensionsToIgnore.includes(href.slice(-4))
+      || !href.includes(root)
     ) {
       continue;
     }
 
-    if (fileExtensionsToIgnore.includes(href.slice(-4))) {
-      continue;
-    }
-
+    // add
     if (!hrefs[href]) {
       hrefs[href] = true;
     }
@@ -65,15 +62,19 @@ function harvestHrefs(as, root) {
   return hrefs;
 }
 
-function isAbsolute(url) {
-  return url.indexOf('http://') === 0
-    || url.indexOf('https://') === 0
-    || url.indexOf('//') === 0;
+function isRelative(url) {
+  return url.indexOf('http://') !== 0
+    && url.indexOf('https://') !== 0
+    && url.indexOf('//') !== 0;
 }
 
-function isFragment(relativeUrl) {
-  const indexOfHash = relativeUrl.indexOf('#');
-  return indexOfHash === 0 || indexOfHash === 1;
+function defragmentify(url) {
+  const hashIndex = url.indexOf('#');
+  if (hashIndex > -1) {
+    return url.slice(0, hashIndex);
+  } else {
+    return url;
+  }
 }
 
 module.exports = {

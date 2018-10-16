@@ -28,6 +28,9 @@ function harvestHrefs(as, root) {
       continue;
     }
 
+    // because 'www.' is for squares
+    href = href.replace('www.', '');
+
     if (isRelative(href)) {
       if (href.indexOf('/') !== 0) {
         href = root + '/' + href;
@@ -53,7 +56,6 @@ function harvestHrefs(as, root) {
       continue;
     }
 
-    // add
     if (!hrefs[href]) {
       hrefs[href] = true;
     }

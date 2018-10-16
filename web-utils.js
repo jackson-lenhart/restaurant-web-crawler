@@ -51,7 +51,7 @@ function harvestHrefs(as, root) {
       || href.includes('sms:')
       || /javascript: ?void/.test(href)
       || fileExtensionsToIgnore.includes(href.slice(-4))
-      || !href.includes(root)
+      || href.indexOf(root) !== 0
     ) {
       continue;
     }

@@ -2,6 +2,7 @@
 
 const cheerio = require('cheerio');
 const fetch = require('node-fetch');
+const URL = require('url-parse');
 
 async function loadContent(url) {
   try {
@@ -13,12 +14,19 @@ async function loadContent(url) {
   }
 }
 
-function harvestHrefs(as, root) {
+function harvestLocalHrefs(as, origin, hostname) {
   const fileExtensionsToIgnore = ['.jpg', '.png', '.bmp', '.pdf', '.svg'];
   const hrefs = {};
   for (let i = 0; i < as.length; i++) {
     let href = as[i].attribs.href;
-    if (!href) {
+    if (
+      !href
+      || href.includes('tel:')
+      || href.includes('mailto:')
+      || href.includes('sms:')
+      || href.includes('javascript:')
+      || fileExtensionsToIgnore.includes(href.slice(-4))
+    ) {
       continue;
     }
 
@@ -31,11 +39,12 @@ function harvestHrefs(as, root) {
     // because 'www.' is for squares
     href = href.replace('www.', '');
 
+    // if relative, prepend the origin to make it absolute
     if (isRelative(href)) {
       if (href.indexOf('/') !== 0) {
-        href = root + '/' + href;
+        href = origin + '/' + href;
       } else {
-        href = root + href;
+        href = origin + href;
       }
     }
 
@@ -44,16 +53,15 @@ function harvestHrefs(as, root) {
       href = href.slice(0, -1);
     }
 
-    // hrefs we aint tryna mess with
-    if (
-      href.includes('tel:')
-      || href.includes('mailto:')
-      || href.includes('sms:')
-      || /javascript: ?void/.test(href)
-      || fileExtensionsToIgnore.includes(href.slice(-4))
-      || href.indexOf(root) !== 0
-    ) {
+    const _hostname = new URL(href).hostname;
+    if (!_hostname.includes(hostname)) {
       continue;
+    }
+
+    // handle protocol agnostic hrefs
+    if (href.indexOf('//') === 0) {
+      const protocol = new URL(origin).protocol;
+      console.log(protool)
     }
 
     if (!hrefs[href]) {
@@ -81,5 +89,5 @@ function defragmentify(url) {
 
 module.exports = {
   loadContent,
-  harvestHrefs
+  harvestLocalHrefs
 };

@@ -36,9 +36,6 @@ function harvestLocalHrefs(as, origin, hostname) {
       continue;
     }
 
-    // because 'www.' is for squares
-    href = href.replace('www.', '');
-
     // if relative, prepend the origin to make it absolute
     if (isRelative(href)) {
       if (href.indexOf('/') !== 0) {
@@ -48,23 +45,31 @@ function harvestLocalHrefs(as, origin, hostname) {
       }
     }
 
-    // remove trailing slash if there is one
-    if (href[href.length - 1] === '/') {
-      href = href.slice(0, -1);
+    // handle absolute urls
+    else {
+      const _hostname = new URL(href).hostname;
+      if (!_hostname.includes(hostname)) {
+        continue;
+      }
+
+      // handle protocol agnostic hrefs
+      if (href.indexOf('//') === 0) {
+        const protocol = new URL(origin).protocol;
+
+        // prepend protocol of its origin
+        href = protocol + href;
+      }
+
+      // because 'www.' is for squares
+      href = href.replace('www.', '');
     }
 
-    const _hostname = new URL(href).hostname;
-    if (!_hostname.includes(hostname)) {
-      continue;
-    }
+    // get rid of adjacent forward slashes in path
+    const hrefObj = new URL(href);
+    href = hrefObj.origin + hrefObj.pathname.replace(/\/{2,}/, '/');
 
-    // handle protocol agnostic hrefs
-    if (href.indexOf('//') === 0) {
-      const protocol = new URL(origin).protocol;
-
-      // prepend protocol of its origin
-      href = protocol + href;
-    }
+    // remove training slash(es) if there is/are any
+    href = href.replace(/\/+$/, '');
 
     if (!hrefs[href]) {
       hrefs[href] = true;

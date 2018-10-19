@@ -61,7 +61,9 @@ function harvestLocalHrefs(as, origin, hostname) {
     // handle protocol agnostic hrefs
     if (href.indexOf('//') === 0) {
       const protocol = new URL(origin).protocol;
-      console.log(protool)
+
+      // prepend protocol of its origin
+      href = protocol + href;
     }
 
     if (!hrefs[href]) {

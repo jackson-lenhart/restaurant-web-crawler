@@ -2,7 +2,8 @@
 
 const URL = require('url-parse');
 const urls = require('./urls');
-const { depthFirstSearch } = require('./depth-first-search');
+// const { depthFirstSearch } = require('./depth-first-search');
+const breadthFirstSearch = require('./breadth-first-search');
 
 (async function() {
   try {
@@ -15,7 +16,7 @@ const { depthFirstSearch } = require('./depth-first-search');
       // counter will increment for each hit
       let counter = 0;
 
-      await depthFirstSearch(s, function(domTree, url) {
+      await breadthFirstSearch(s, function(domTree, url) {
         const as = domTree('a');
         for (let i = 0; i < as.length; i++) {
           const href = as[i].attribs.href;

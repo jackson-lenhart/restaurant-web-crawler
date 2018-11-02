@@ -19,8 +19,8 @@ async function visit(hostname, visited, f, vs) {
   for (const v in vs) {
     const url = new URL(v);
 
-    /* using this as a key instead of full url
-    to avoid double visiting for https: and http: */
+    // using this as a key instead of full url
+    // to avoid double visiting for https: and http:
     let key = url.hostname + url.pathname;
 
     // remove trailing slash if there is one
@@ -29,6 +29,7 @@ async function visit(hostname, visited, f, vs) {
     }
 
     if (!visited[key]) {
+      console.log(v);
       try {
         const domTree = await loadContent(v);
         f(domTree, v);

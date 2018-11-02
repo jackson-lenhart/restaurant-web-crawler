@@ -15,22 +15,26 @@ async function loadContent(url) {
 }
 
 function harvestLocalHrefs(as, origin, hostname) {
-  const fileExtensionsToIgnore = ['.jpg', '.png', '.bmp', '.pdf', '.svg'];
+  const fileExtensionsToIgnore =
+    ['jpg', 'png', 'bmp', 'pdf', 'svg', 'js', 'css'];
+
   const hrefs = {};
   for (let i = 0; i < as.length; i++) {
     let href = as[i].attribs.href;
+    const extension = /(?:\.([^.]+))?$/.exec(href)[1];
     if (
       !href
       || href.includes('tel:')
       || href.includes('mailto:')
       || href.includes('sms:')
       || href.includes('javascript:')
-      || fileExtensionsToIgnore.includes(href.slice(-4))
+      || fileExtensionsToIgnore.includes(extension)
+      //|| fileExtensionsToIgnore.includes(href.slice(-4))
     ) {
       continue;
     }
 
-    // remove fragments and ignore if we end up with empty string
+    // remove fragments (i.e. /#something) and ignore if we end up with empty string
     href = defragmentify(href);
     if (href === '') {
       continue;
@@ -59,17 +63,14 @@ function harvestLocalHrefs(as, origin, hostname) {
         // prepend protocol of its origin
         href = protocol + href;
       }
-
-      // because 'www.' is for squares
-      href = href.replace('www.', '');
     }
 
     // get rid of adjacent forward slashes in path
     const hrefObj = new URL(href);
     href = hrefObj.origin + hrefObj.pathname.replace(/\/{2,}/, '/');
 
-    // remove training slash(es) if there is/are any
-    href = href.replace(/\/+$/, '');
+    // remove trailing slash(es) if there is/are any
+    href = removeTrailingSlashes(href);
 
     if (!hrefs[href]) {
       hrefs[href] = true;
@@ -94,7 +95,23 @@ function defragmentify(url) {
   }
 }
 
+function removeWww(urlKey) {
+  return urlKey.replace(/^www./, '');
+}
+
+function sliceOffProtocol(href) {
+  const url = new URL(href);
+  return url.hostname + url.pathname;
+}
+
+function removeTrailingSlashes(href) {
+  return href.replace(/\/+$/, '');
+}
+
 module.exports = {
   loadContent,
-  harvestLocalHrefs
+  harvestLocalHrefs,
+  removeWww,
+  removeTrailingSlashes,
+  sliceOffProtocol
 };
